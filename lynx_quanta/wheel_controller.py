@@ -34,17 +34,17 @@ class M20SkidSteerController(Node):
     def lock_callback(self, msg):
         self.locked = msg.data
 
-    # Update your cmd_vel_callback
-    def cmd_vel_callback(self, msg):
         if self.locked:
-            return # Do nothing if sitting
-
-        self.get_logger().info("M20 skid-steer controller started")
+            self.publish_wheel_command(0.0, 0.0)
 
     def clamp(self, value, min_value, max_value):
         return max(min(value, max_value), min_value)
 
     def cmd_vel_callback(self, msg):
+        if self.locked:
+            self.publish_wheel_command(0.0, 0.0)
+            return
+
         v = msg.linear.x
         wz = msg.angular.z
 
@@ -57,6 +57,9 @@ class M20SkidSteerController(Node):
         wl = self.clamp(wl, -self.max_wheel_speed, self.max_wheel_speed)
         wr = self.clamp(wr, -self.max_wheel_speed, self.max_wheel_speed)
 
+        self.publish_wheel_command(wl, wr)
+
+    def publish_wheel_command(self, wl, wr):
         cmd = Float64MultiArray()
 
         # Joint order must match YAML:
