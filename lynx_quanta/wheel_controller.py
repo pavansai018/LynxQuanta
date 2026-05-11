@@ -45,7 +45,6 @@ class M20SkidSteerController(Node):
 
     def cmd_vel_callback(self, msg):
         if self.locked:
-            self.publish_wheel_command(0.0, 0.0)
             return
 
         v = msg.linear.x
