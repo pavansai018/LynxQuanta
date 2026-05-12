@@ -3,7 +3,7 @@ from rclpy.node import Node
 from sensor_msgs.msg import Image
 import numpy as np
 from cv_bridge import CvBridge
-import cv2
+import cv2 # type: ignore
 
 
 class DepthVisualizer(Node):

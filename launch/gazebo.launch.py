@@ -17,7 +17,7 @@ def generate_launch_description():
         description='Use Gazebo simulation clock')
 
     pkg_lynx    = get_package_share_directory('lynx_quanta')
-    urdf        = os.path.join(pkg_lynx, 'urdf', 'm20_with_arm', 'm20_with_arm_v2.urdf')
+    urdf        = os.path.join(pkg_lynx, 'urdf', 'm20_with_arm', 'm20_with_arm.urdf')
     ctrl_yaml   = os.path.join(pkg_lynx, 'config', 'm20_with_arm_controller.yaml')
 
     robot_desc = ParameterValue(
@@ -53,6 +53,19 @@ def generate_launch_description():
             '/odom@nav_msgs/msg/Odometry[gz.msgs.Odometry',
             '/tf@tf2_msgs/msg/TFMessage[gz.msgs.Pose_V',
             '/joint_states@sensor_msgs/msg/JointState[gz.msgs.Model',
+            "/imu/data@sensor_msgs/msg/Imu[gz.msgs.IMU",
+            '/camera_front/depth_image@sensor_msgs/msg/Image@gz.msgs.Image',
+            '/camera_front/camera_info@sensor_msgs/msg/CameraInfo@gz.msgs.CameraInfo',
+            '/camera_front/image@sensor_msgs/msg/Image@gz.msgs.Image',
+            '/camera_front/points@sensor_msgs/msg/PointCloud2@gz.msgs.PointCloudPacked',
+            '/camera_rear/depth_image@sensor_msgs/msg/Image@gz.msgs.Image',
+            '/camera_rear/camera_info@sensor_msgs/msg/CameraInfo@gz.msgs.CameraInfo',
+            '/camera_rear/image@sensor_msgs/msg/Image@gz.msgs.Image',
+            '/camera_rear/points@sensor_msgs/msg/PointCloud2@gz.msgs.PointCloudPacked',
+            '/lidar_front/points@sensor_msgs/msg/PointCloud2@gz.msgs.PointCloudPacked',
+            '/lidar_rear/points@sensor_msgs/msg/PointCloud2@gz.msgs.PointCloudPacked',
+            "/lidar_front@sensor_msgs/msg/LaserScan[gz.msgs.LaserScan",
+            "/lidar_rear@sensor_msgs/msg/LaserScan[gz.msgs.LaserScan",
         ],
         parameters=[{'use_sim_time': use_sim_time}],
     )
@@ -68,6 +81,24 @@ def generate_launch_description():
             'ignore_timestamp':  True,
         }],
         remappings=[('/cmd_vel_nav', '/cmd_vel')],
+    )
+
+    slam_toolbox = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource([
+            PathJoinSubstitution([
+                FindPackageShare('slam_toolbox'), 'launch', 'online_async_launch.py'
+            ])
+
+        ]),
+        launch_arguments={
+            'slam_params_file': PathJoinSubstitution(
+                [
+                    FindPackageShare('lynx_quanta'), 'config', 'mapper_params_online_async.yaml',
+                ]
+            ),
+            'use_sim_time': 'true',
+
+        }.items()
     )
 
     # ── ros2_control spawners ─────────────────────────────────────────────────
@@ -86,6 +117,54 @@ def generate_launch_description():
         arguments=['wheel_velocity_controller'], output='screen',
     )
 
+    arm_controller_spawner = Node(
+        package="controller_manager",
+        executable="spawner",
+        arguments=["arm_controller"],
+        parameters=[{"use_sim_time": use_sim_time}],
+        output="screen",
+
+    )
+
+    depth_visualizer_node = Node(
+        package="lynx_quanta",
+        executable="depth_visualizer",
+        name="depth_visualizer",
+        output="screen",
+        parameters=[{"use_sim_time": use_sim_time}],
+    )
+
+
+    dual_lidar_merger_node = Node(
+        package='lynx_quanta',
+        executable='lidar_merger',
+        name='lidar_merger',
+        output='screen',
+        parameters=[{
+            'use_sim_time': use_sim_time,
+
+            'target_frame': 'base_link',
+
+            'front_topic': '/lidar_front/points',
+            'rear_topic': '/lidar_rear/points',
+
+            'merged_cloud_topic': '/lidar_merged_points',
+            'merged_scan_topic': '/scan',
+
+            'min_height': -0.02,
+            'max_height': 0.35,
+
+            'angle_min': -3.14159,
+            'angle_max': 3.14159,
+            'angle_increment': 0.00349,
+
+            'range_min': 0.15,
+            'range_max': 50.0,
+
+            'publish_rate': 10.0,
+        }],
+    )
+
     brain = Node(
         package='lynx_quanta', executable='lynx_brain', name='lynx_brain',
         output='screen', parameters=[{'use_sim_time': use_sim_time}],
@@ -101,5 +180,9 @@ def generate_launch_description():
     ld.add_action(joint_state_broadcaster)
     ld.add_action(leg_pose_controller)
     ld.add_action(wheel_velocity_controller)
+    ld.add_action(arm_controller_spawner)
+    ld.add_action(slam_toolbox)
+    ld.add_action(depth_visualizer_node)
+    ld.add_action(dual_lidar_merger_node)
     ld.add_action(brain)
     return ld
