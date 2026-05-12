@@ -1,0 +1,49 @@
+# ============================================================
+#  octomap_server configuration for Lynx M20
+#
+#  Subscribes to FastLIO2 registered cloud → builds 3D voxel map
+#  → projects to 2D occupancy grid for Nav2
+#
+#  Save to: lynx_quanta/config/octomap.yaml
+# ============================================================
+
+octomap_server_node:
+  ros__parameters:
+
+    # ── Input ─────────────────────────────────────────────────────────────────
+    # FastLIO2 publishes registered (world-frame) point cloud here
+    pointcloud_topic: "/cloud_registered"
+
+    # ── Map frames ────────────────────────────────────────────────────────────
+    # FastLIO2 publishes in "camera_init" frame by default.
+    # We remap this to "map" in the launch file.
+    frame_id: "map"
+
+    # ── Voxel resolution ──────────────────────────────────────────────────────
+    # 0.05m = 5cm cells — matches Nav2 costmap resolution
+    resolution: 0.05
+
+    # ── Height filtering for 2D projection ────────────────────────────────────
+    # Only include points between these heights (in map frame).
+    # Robot navigates on flat ground: keep 10cm–180cm above ground
+    filter_ground: true
+    filter_ground_height: 0.05   # ignore points below 5cm (ground plane)
+
+    # For the projected 2D map:
+    occupancy_min_z:  0.1        # min height to mark as obstacle (10cm)
+    occupancy_max_z:  1.8        # max height to mark as obstacle (180cm)
+
+    # ── Probabilities ─────────────────────────────────────────────────────────
+    sensor_model_max_range:  15.0   # matches FastLIO2 det_range
+    sensor_model_hit:        0.7
+    sensor_model_miss:       0.4
+    sensor_model_min:        0.12
+    sensor_model_max:        0.97
+
+    # ── Output topics ─────────────────────────────────────────────────────────
+    # /octomap_full        → 3D octomap (for RViz 3D view)
+    # /octomap_binary      → compressed 3D octomap
+    # /projected_map       → 2D occupancy grid → Nav2 map_server
+
+    # ── Performance ───────────────────────────────────────────────────────────
+    latch: false
