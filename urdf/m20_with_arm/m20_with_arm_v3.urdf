@@ -1,0 +1,1254 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  M20 Lynx Quadruped + RM65-6FB-V 6-DOF Arm  — Integrated URDF
+  =============================================================
+  Arm mounting:
+    • Rail area  : 270 mm × 165 mm centred on back of base_link
+    • Mount origin in base_link frame: X=0.00 m, Y=0.00 m, Z=0.075 m
+      (Z = top surface of body box ~70 mm + 5 mm plate clearance)
+    • Height budget: arm_joint_1 lifts the first link 240.5 mm above
+      arm_base_link, staying well under the 300 mm recommended limit
+      in the default (stowed) pose.
+
+  Naming convention:
+    • All arm links/joints are prefixed "arm_" to avoid clashes with
+      the dog's own base_link and sensor links.
+    • arm_mount_link  – 10 mm aluminium plate representing the rail
+      adapter bracket; 270 × 165 × 10 mm, mass ≈ 0.120 kg.
+    • arm_base_link   – RM65 base (was "base_link" in the arm URDF).
+    • arm_link_1 … arm_link_6  – RM65 links 1-6.
+    • arm_camera_rolink / arm_camera_link – wrist camera assembly.
+
+  Mesh paths:
+    • Dog  : file://$(find lynx_quanta)/meshes/m20/<name>.dae
+    • Arm  : file://$(find lynx_quanta)/meshes/arm_v2/<name>.STL
+      ► Copy RM65-6FB-V/meshes/*.STL  into  <pkg>/meshes/arm_v2/
+        (you already said you created meshes/arm_v2/ — just drop the
+        STL files there; no rename needed).
+
+  ros2_control:
+    • Arm joints arm_joint_1 … arm_joint_6 added as position-controlled.
+    • arm_camera_rojoint is passive (effort/velocity limits = 0) and is
+      NOT added to ros2_control.
+    • Controller YAML (m20_with_arm_controller.yaml) needs an
+      arm_controller section — see comment at the bottom of the file.
+-->
+<robot name="m20_with_arm" xmlns:xacro="http://ros.org/wiki/xacro">
+<xacro:arg name="ros2_control_yaml" default=""/>
+
+    <!-- ================================================================== -->
+    <!--  DOG BASE                                                           -->
+    <!-- ================================================================== -->
+
+    <link name="base_footprint"/>
+    <joint name="base_joint" type="fixed">
+        <parent link="base_footprint"/>
+        <child link="base_link"/>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+    </joint>
+
+    <link name="base_link">
+        <inertial>
+            <origin xyz="0.00355105878308153 0.0016507579200937 -0.00346462146571654" rpy="0 0 0"/>
+            <mass value="15.882"/>
+            <inertia ixx="0.087919" ixy="0.001396" ixz="0.000111" iyy="0.533522" iyz="0.000519" izz="0.563492"/>
+        </inertial>
+        <visual>
+            <origin xyz="0 0 0" rpy="0 0 0"/>
+            <geometry>
+                <mesh filename="file://$(find lynx_quanta)/meshes/m20/base_link.dae"/>
+            </geometry>
+        </visual>
+        <collision>
+            <origin xyz="0 0 0" rpy="0 0 0"/>
+            <geometry><box size="0.75 0.09 0.14"/></geometry>
+        </collision>
+        <collision>
+            <origin xyz="0 0.045 0" rpy="0 1.57079632 0"/>
+            <geometry><cylinder length="0.75" radius="0.07"/></geometry>
+        </collision>
+        <collision>
+            <origin xyz="0 -0.045 0" rpy="0 1.57079632 0"/>
+            <geometry><cylinder length="0.75" radius="0.07"/></geometry>
+        </collision>
+    </link>
+
+    <!-- ================================================================== -->
+    <!--  FRONT-LEFT LEG                                                     -->
+    <!-- ================================================================== -->
+
+    <link name="fl_hipx">
+        <inertial>
+            <origin xyz="-0.0111893129496933 0.00891693461032669 0.000405665689861192" rpy="0 0 0"/>
+            <mass value="0.259964"/>
+            <inertia ixx="0.000184" ixy="0.000026" ixz="-0.000012" iyy="0.000370" iyz="-0.000007" izz="0.000286"/>
+        </inertial>
+        <visual>
+            <origin xyz="0 0 0" rpy="0 0 0"/>
+            <geometry><mesh filename="file://$(find lynx_quanta)/meshes/m20/fl_hipx.dae"/></geometry>
+        </visual>
+        <collision>
+            <origin xyz="0 0.055 0" rpy="1.57079632 0 0"/>
+            <geometry><cylinder length="0.14" radius="0.048"/></geometry>
+        </collision>
+    </link>
+    <joint name="fl_hipx_joint" type="revolute">
+        <origin xyz="0.3141 0.0685 0" rpy="0 0 0"/>
+        <parent link="base_link"/><child link="fl_hipx"/>
+        <axis xyz="-1 0 0"/>
+        <limit lower="-0.436" upper="0.611" effort="76.4" velocity="22.4"/>
+    </joint>
+
+    <link name="fl_hipy">
+        <inertial>
+            <origin xyz="-0.00199374763010413 0.0984389609045802 -0.130663565833427" rpy="0 0 0"/>
+            <mass value="2.618"/>
+            <inertia ixx="0.040808" ixy="-0.000024" ixz="-0.000039" iyy="0.039948" iyz="-0.006286" izz="0.004042"/>
+        </inertial>
+        <visual>
+            <origin xyz="0 0 0" rpy="0 0 0"/>
+            <geometry><mesh filename="file://$(find lynx_quanta)/meshes/m20/fl_hipy.dae"/></geometry>
+        </visual>
+        <collision>
+            <origin xyz="-0.01 0.11 -0.125" rpy="0 0 0"/>
+            <geometry><box size="0.07 0.02 0.25"/></geometry>
+        </collision>
+        <collision>
+            <origin xyz="0 0.11 -0.25" rpy="1.57079632 0 0"/>
+            <geometry><cylinder length="0.09" radius="0.05"/></geometry>
+        </collision>
+    </link>
+    <joint name="fl_hipy_joint" type="revolute">
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <parent link="fl_hipx"/><child link="fl_hipy"/>
+        <axis xyz="0 -1 0"/>
+        <limit lower="-2.286" upper="2.583" effort="76.4" velocity="22.4"/>
+    </joint>
+
+    <link name="fl_knee">
+        <inertial>
+            <origin xyz="0.00341916513259743 0.0026912421076368 -0.181265498605881" rpy="0 0 0"/>
+            <mass value="1.145"/>
+            <inertia ixx="0.011736" ixy="-0.000049" ixz="0.000204" iyy="0.011903" iyz="-0.001525" izz="0.001164"/>
+        </inertial>
+        <visual>
+            <origin xyz="0 0 0" rpy="0 0 0"/>
+            <geometry><mesh filename="file://$(find lynx_quanta)/meshes/m20/fl_knee.dae"/></geometry>
+        </visual>
+        <collision>
+            <origin xyz="0.015 -0.015 -0.125" rpy="0 0 0"/>
+            <geometry><box size="0.06 0.025 0.25"/></geometry>
+        </collision>
+        <collision>
+            <origin xyz="0 0.02 -0.25" rpy="1.57079632 0 0"/>
+            <geometry><cylinder length="0.1" radius="0.04"/></geometry>
+        </collision>
+    </link>
+    <joint name="fl_knee_joint" type="revolute">
+        <origin xyz="0 0.0984 -0.25" rpy="0 0 0"/>
+        <parent link="fl_hipy"/><child link="fl_knee"/>
+        <axis xyz="0 -1 0"/>
+        <limit lower="-2.809" upper="2.792" effort="76.4" velocity="22.4"/>
+    </joint>
+
+    <link name="fl_wheel">
+        <inertial>
+            <origin xyz="-3.11398454355682E-07 0.000279001520740008 5.70329233673394E-07" rpy="0 0 0"/>
+            <mass value="0.638"/>
+            <inertia ixx="0.001535" ixy="0.0" ixz="0.0" iyy="0.002853" iyz="0.0" izz="0.001535"/>
+        </inertial>
+        <visual>
+            <origin xyz="0 0 0" rpy="0 0 0"/>
+            <geometry><mesh filename="file://$(find lynx_quanta)/meshes/m20/fl_wheel.dae"/></geometry>
+        </visual>
+        <collision>
+            <origin xyz="0 0 0" rpy="1.57079632 0 0"/>
+            <geometry><cylinder length="0.054" radius="0.09"/></geometry>
+        </collision>
+    </link>
+    <joint name="fl_wheel_joint" type="continuous">
+        <origin xyz="0 0.059676 -0.25" rpy="0 0 0"/>
+        <parent link="fl_knee"/><child link="fl_wheel"/>
+        <axis xyz="0 -1 0"/>
+        <limit effort="21.6" velocity="79.3"/>
+    </joint>
+
+    <!-- ================================================================== -->
+    <!--  FRONT-RIGHT LEG                                                    -->
+    <!-- ================================================================== -->
+
+    <link name="fr_hipx">
+        <inertial>
+            <origin xyz="-0.0110900940309543 -0.0087503473771439 0.000521421017057358" rpy="0 0 0"/>
+            <mass value="0.259964"/>
+            <inertia ixx="0.000184" ixy="-0.000026" ixz="-0.000012" iyy="0.000370" iyz="0.000007" izz="0.000286"/>
+        </inertial>
+        <visual>
+            <origin xyz="0 0 0" rpy="0 0 0"/>
+            <geometry><mesh filename="file://$(find lynx_quanta)/meshes/m20/fr_hipx.dae"/></geometry>
+        </visual>
+        <collision>
+            <origin xyz="0 -0.055 0" rpy="1.57079632 0 0"/>
+            <geometry><cylinder length="0.14" radius="0.048"/></geometry>
+        </collision>
+    </link>
+    <joint name="fr_hipx_joint" type="revolute">
+        <origin xyz="0.3141 -0.0685 0" rpy="0 0 0"/>
+        <parent link="base_link"/><child link="fr_hipx"/>
+        <axis xyz="-1 0 0"/>
+        <limit lower="-0.611" upper="0.436" effort="76.4" velocity="22.4"/>
+    </joint>
+
+    <link name="fr_hipy">
+        <inertial>
+            <origin xyz="-0.00229991904853988 -0.0989709441053532 -0.130925037640537" rpy="0 0 0"/>
+            <mass value="2.618"/>
+            <inertia ixx="0.040538" ixy="0.000006" ixz="-0.000066" iyy="0.039720" iyz="0.006161" izz="0.004047"/>
+        </inertial>
+        <visual>
+            <origin xyz="0 0 0" rpy="0 0 0"/>
+            <geometry><mesh filename="file://$(find lynx_quanta)/meshes/m20/fr_hipy.dae"/></geometry>
+        </visual>
+        <collision>
+            <origin xyz="-0.01 -0.11 -0.125" rpy="0 0 0"/>
+            <geometry><box size="0.07 0.02 0.25"/></geometry>
+        </collision>
+        <collision>
+            <origin xyz="0 -0.11 -0.25" rpy="1.57079632 0 0"/>
+            <geometry><cylinder length="0.09" radius="0.05"/></geometry>
+        </collision>
+    </link>
+    <joint name="fr_hipy_joint" type="revolute">
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <parent link="fr_hipx"/><child link="fr_hipy"/>
+        <axis xyz="0 -1 0"/>
+        <limit lower="-2.286" upper="2.583" effort="76.4" velocity="22.4"/>
+    </joint>
+
+    <link name="fr_knee">
+        <inertial>
+            <origin xyz="0.0035494546955584 -0.002478843181213 -0.180089236444296" rpy="0 0 0"/>
+            <mass value="1.145"/>
+            <inertia ixx="0.011856" ixy="0.000049" ixz="0.000200" iyy="0.012030" iyz="0.001532" izz="0.001167"/>
+        </inertial>
+        <visual>
+            <origin xyz="0 0 0" rpy="0 0 0"/>
+            <geometry><mesh filename="file://$(find lynx_quanta)/meshes/m20/fr_knee.dae"/></geometry>
+        </visual>
+        <collision>
+            <origin xyz="0.015 0.015 -0.125" rpy="0 0 0"/>
+            <geometry><box size="0.06 0.025 0.25"/></geometry>
+        </collision>
+        <collision>
+            <origin xyz="0 -0.02 -0.25" rpy="1.57079632 0 0"/>
+            <geometry><cylinder length="0.1" radius="0.04"/></geometry>
+        </collision>
+    </link>
+    <joint name="fr_knee_joint" type="revolute">
+        <origin xyz="0 -0.0984 -0.25" rpy="0 0 0"/>
+        <parent link="fr_hipy"/><child link="fr_knee"/>
+        <axis xyz="0 -1 0"/>
+        <limit lower="-2.809" upper="2.792" effort="76.4" velocity="22.4"/>
+    </joint>
+
+    <link name="fr_wheel">
+        <inertial>
+            <origin xyz="-6.4732687427016E-07 -0.000279012463466427 -4.62420470803693E-08" rpy="0 0 0"/>
+            <mass value="0.638"/>
+            <inertia ixx="0.001535" ixy="0.0" ixz="0.0" iyy="0.002853" iyz="0.0" izz="0.001535"/>
+        </inertial>
+        <visual>
+            <origin xyz="0 0 0" rpy="0 0 0"/>
+            <geometry><mesh filename="file://$(find lynx_quanta)/meshes/m20/fr_wheel.dae"/></geometry>
+        </visual>
+        <collision>
+            <origin xyz="0 0 0" rpy="1.57079632 0 0"/>
+            <geometry><cylinder length="0.054" radius="0.09"/></geometry>
+        </collision>
+    </link>
+    <joint name="fr_wheel_joint" type="continuous">
+        <origin xyz="0 -0.059676 -0.25" rpy="0 0 0"/>
+        <parent link="fr_knee"/><child link="fr_wheel"/>
+        <axis xyz="0 -1 0"/>
+        <limit effort="21.6" velocity="79.3"/>
+    </joint>
+
+    <!-- ================================================================== -->
+    <!--  HIND-LEFT LEG                                                      -->
+    <!-- ================================================================== -->
+
+    <link name="hl_hipx">
+        <inertial>
+            <origin xyz="0.0110900940233134 0.00875014035040743 0.000524883746291591" rpy="0 0 0"/>
+            <mass value="0.259964"/>
+            <inertia ixx="0.000184" ixy="-0.000026" ixz="0.000012" iyy="0.000370" iyz="-0.000007" izz="0.000286"/>
+        </inertial>
+        <visual>
+            <origin xyz="0 0 0" rpy="0 0 0"/>
+            <geometry><mesh filename="file://$(find lynx_quanta)/meshes/m20/hl_hipx.dae"/></geometry>
+        </visual>
+        <collision>
+            <origin xyz="0 0.055 0" rpy="1.57079632 0 0"/>
+            <geometry><cylinder length="0.14" radius="0.048"/></geometry>
+        </collision>
+    </link>
+    <joint name="hl_hipx_joint" type="revolute">
+        <origin xyz="-0.3141 0.0685 0" rpy="0 0 0"/>
+        <parent link="base_link"/><child link="hl_hipx"/>
+        <axis xyz="-1 0 0"/>
+        <limit lower="-0.436" upper="0.611" effort="76.4" velocity="22.4"/>
+    </joint>
+
+    <link name="hl_hipy">
+        <inertial>
+            <origin xyz="0.00204343366218146 0.0990227473833045 -0.13069726691312" rpy="0 0 0"/>
+            <mass value="2.618"/>
+            <inertia ixx="0.040625" ixy="0.000031" ixz="0.000011" iyy="0.039791" iyz="-0.006194" izz="0.004040"/>
+        </inertial>
+        <visual>
+            <origin xyz="0 0 0" rpy="0 0 0"/>
+            <geometry><mesh filename="file://$(find lynx_quanta)/meshes/m20/hl_hipy.dae"/></geometry>
+        </visual>
+        <collision>
+            <origin xyz="0.01 0.11 -0.125" rpy="0 0 0"/>
+            <geometry><box size="0.07 0.02 0.25"/></geometry>
+        </collision>
+        <collision>
+            <origin xyz="0 0.11 -0.25" rpy="1.57079632 0 0"/>
+            <geometry><cylinder length="0.09" radius="0.05"/></geometry>
+        </collision>
+    </link>
+    <joint name="hl_hipy_joint" type="revolute">
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <parent link="hl_hipx"/><child link="hl_hipy"/>
+        <axis xyz="0 -1 0"/>
+        <limit lower="-2.583" upper="2.286" effort="76.4" velocity="22.4"/>
+    </joint>
+
+    <link name="hl_knee">
+        <inertial>
+            <origin xyz="-0.00354945209738589 0.00247884637205834 -0.180089257150601" rpy="0 0 0"/>
+            <mass value="1.145"/>
+            <inertia ixx="0.011856" ixy="0.000049" ixz="-0.000200" iyy="0.012030" iyz="-0.001532" izz="0.001167"/>
+        </inertial>
+        <visual>
+            <origin xyz="0 0 0" rpy="0 0 0"/>
+            <geometry><mesh filename="file://$(find lynx_quanta)/meshes/m20/hl_knee.dae"/></geometry>
+        </visual>
+        <collision>
+            <origin xyz="-0.015 0.015 -0.125" rpy="0 0 0"/>
+            <geometry><box size="0.06 0.025 0.25"/></geometry>
+        </collision>
+        <collision>
+            <origin xyz="0 0.02 -0.25" rpy="1.57079632 0 0"/>
+            <geometry><cylinder length="0.1" radius="0.04"/></geometry>
+        </collision>
+    </link>
+    <joint name="hl_knee_joint" type="revolute">
+        <origin xyz="0 0.0984 -0.25" rpy="0 0 0"/>
+        <parent link="hl_hipy"/><child link="hl_knee"/>
+        <axis xyz="0 -1 0"/>
+        <limit lower="-2.792" upper="2.809" effort="76.4" velocity="22.4"/>
+    </joint>
+
+    <link name="hl_wheel">
+        <inertial>
+            <origin xyz="-6.07889369508285E-07 0.000279009097070765 2.10489879304276E-07" rpy="0 0 0"/>
+            <mass value="0.638"/>
+            <inertia ixx="0.001535" ixy="0.0" ixz="0.0" iyy="0.002853" iyz="0.0" izz="0.001535"/>
+        </inertial>
+        <visual>
+            <origin xyz="0 0 0" rpy="0 0 0"/>
+            <geometry><mesh filename="file://$(find lynx_quanta)/meshes/m20/hl_wheel.dae"/></geometry>
+        </visual>
+        <collision>
+            <origin xyz="0 0 0" rpy="1.57079632 0 0"/>
+            <geometry><cylinder length="0.054" radius="0.09"/></geometry>
+        </collision>
+    </link>
+    <joint name="hl_wheel_joint" type="continuous">
+        <origin xyz="0 0.059676 -0.25" rpy="0 0 0"/>
+        <parent link="hl_knee"/><child link="hl_wheel"/>
+        <axis xyz="0 -1 0"/>
+        <limit effort="21.6" velocity="79.3"/>
+    </joint>
+
+    <!-- ================================================================== -->
+    <!--  HIND-RIGHT LEG                                                     -->
+    <!-- ================================================================== -->
+
+    <link name="hr_hipx">
+        <inertial>
+            <origin xyz="0.0110901558226165 -0.00875011717083631 0.000524936954718227" rpy="0 0 0"/>
+            <mass value="0.259964"/>
+            <inertia ixx="0.000184" ixy="0.000026" ixz="0.000012" iyy="0.000370" iyz="0.000007" izz="0.000286"/>
+        </inertial>
+        <visual>
+            <origin xyz="0 0 0" rpy="0 0 0"/>
+            <geometry><mesh filename="file://$(find lynx_quanta)/meshes/m20/hr_hipx.dae"/></geometry>
+        </visual>
+        <collision>
+            <origin xyz="0 -0.055 0" rpy="1.57079632 0 0"/>
+            <geometry><cylinder length="0.14" radius="0.048"/></geometry>
+        </collision>
+    </link>
+    <joint name="hr_hipx_joint" type="revolute">
+        <origin xyz="-0.3141 -0.0685 0" rpy="0 0 0"/>
+        <parent link="base_link"/><child link="hr_hipx"/>
+        <axis xyz="-1 0 0"/>
+        <limit lower="-0.611" upper="0.436" effort="76.4" velocity="22.4"/>
+    </joint>
+
+    <link name="hr_hipy">
+        <inertial>
+            <origin xyz="0.00199199678434109 -0.0983704174694303 -0.13056065751366" rpy="0 0 0"/>
+            <mass value="2.618"/>
+            <inertia ixx="0.040804" ixy="-0.000023" ixz="0.000039" iyy="0.039939" iyz="0.006291" izz="0.004046"/>
+        </inertial>
+        <visual>
+            <origin xyz="0 0 0" rpy="0 0 0"/>
+            <geometry><mesh filename="file://$(find lynx_quanta)/meshes/m20/hr_hipy.dae"/></geometry>
+        </visual>
+        <collision>
+            <origin xyz="0.01 -0.11 -0.125" rpy="0 0 0"/>
+            <geometry><box size="0.07 0.02 0.25"/></geometry>
+        </collision>
+        <collision>
+            <origin xyz="0 -0.11 -0.25" rpy="1.57079632 0 0"/>
+            <geometry><cylinder length="0.09" radius="0.05"/></geometry>
+        </collision>
+    </link>
+    <joint name="hr_hipy_joint" type="revolute">
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <parent link="hr_hipx"/><child link="hr_hipy"/>
+        <axis xyz="0 -1 0"/>
+        <limit lower="-2.583" upper="2.286" effort="76.4" velocity="22.4"/>
+    </joint>
+
+    <link name="hr_knee">
+        <inertial>
+            <origin xyz="-0.00341053036115846 -0.0027020185369851 -0.181287492263963" rpy="0 0 0"/>
+            <mass value="1.145"/>
+            <inertia ixx="0.011740" ixy="-0.000048" ixz="-0.000204" iyy="0.011908" iyz="0.001526" izz="0.001165"/>
+        </inertial>
+        <visual>
+            <origin xyz="0 0 0" rpy="0 0 0"/>
+            <geometry><mesh filename="file://$(find lynx_quanta)/meshes/m20/hr_knee.dae"/></geometry>
+        </visual>
+        <collision>
+            <origin xyz="-0.015 0.015 -0.125" rpy="0 0 0"/>
+            <geometry><box size="0.06 0.025 0.25"/></geometry>
+        </collision>
+        <collision>
+            <origin xyz="0 -0.02 -0.25" rpy="1.57079632 0 0"/>
+            <geometry><cylinder length="0.1" radius="0.04"/></geometry>
+        </collision>
+    </link>
+    <joint name="hr_knee_joint" type="revolute">
+        <origin xyz="0 -0.0984 -0.25" rpy="0 0 0"/>
+        <parent link="hr_hipy"/><child link="hr_knee"/>
+        <axis xyz="0 -1 0"/>
+        <limit lower="-2.792" upper="2.809" effort="76.4" velocity="22.4"/>
+    </joint>
+
+    <link name="hr_wheel">
+        <inertial>
+            <origin xyz="6.09746291457824E-07 -0.00027900886004309 2.0131377032051E-07" rpy="0 0 0"/>
+            <mass value="0.638"/>
+            <inertia ixx="0.001535" ixy="0.0" ixz="0.0" iyy="0.002853" iyz="0.0" izz="0.001535"/>
+        </inertial>
+        <visual>
+            <origin xyz="0 0 0" rpy="0 0 0"/>
+            <geometry><mesh filename="file://$(find lynx_quanta)/meshes/m20/hr_wheel.dae"/></geometry>
+        </visual>
+        <collision>
+            <origin xyz="0 0 0" rpy="1.57079632 0 0"/>
+            <geometry><cylinder length="0.054" radius="0.09"/></geometry>
+        </collision>
+    </link>
+    <joint name="hr_wheel_joint" type="continuous">
+        <origin xyz="0 -0.059676 -0.25" rpy="0 0 0"/>
+        <parent link="hr_knee"/><child link="hr_wheel"/>
+        <axis xyz="0 -1 0"/>
+        <limit effort="21.6" velocity="79.3"/>
+    </joint>
+
+    <!-- ================================================================== -->
+    <!--  DOG SENSORS (cameras, lidars, IMU)                                 -->
+    <!-- ================================================================== -->
+
+    <link name="camera_front_link">
+        <visual>
+            <origin xyz="0 0 0" rpy="0 0 0"/>
+            <geometry><box size="0.040 0.090 0.025"/></geometry>
+            <material name="dark_grey"><color rgba="0.2 0.2 0.2 1.0"/></material>
+        </visual>
+        <collision>
+            <origin xyz="0 0 0" rpy="0 0 0"/>
+            <geometry><box size="0.040 0.090 0.025"/></geometry>
+        </collision>
+        <inertial>
+            <origin xyz="0 0 0" rpy="0 0 0"/>
+            <mass value="0.072"/>
+            <inertia ixx="0.0001" ixy="0.0" ixz="0.0" iyy="0.0001" iyz="0.0" izz="0.0001"/>
+        </inertial>
+    </link>
+    <joint name="camera_front_joint" type="fixed">
+        <!-- Official M20 coords: X=376.46mm Y=0 Z=37.38mm (page 10 hardware manual) -->
+        <origin xyz="0.37646 0.0 0.03738" rpy="0 0 0"/>
+        <parent link="base_link"/><child link="camera_front_link"/>
+    </joint>
+
+    <link name="camera_rear_link">
+        <visual>
+            <origin xyz="0 0 0" rpy="0 0 0"/>
+            <geometry><box size="0.040 0.090 0.025"/></geometry>
+            <material name="dark_grey"><color rgba="0.2 0.2 0.2 1.0"/></material>
+        </visual>
+        <collision>
+            <origin xyz="0 0 0" rpy="0 0 0"/>
+            <geometry><box size="0.040 0.090 0.025"/></geometry>
+        </collision>
+        <inertial>
+            <origin xyz="0 0 0" rpy="0 0 0"/>
+            <mass value="0.072"/>
+            <inertia ixx="0.0001" ixy="0.0" ixz="0.0" iyy="0.0001" iyz="0.0" izz="0.0001"/>
+        </inertial>
+    </link>
+    <joint name="camera_rear_joint" type="fixed">
+        <!-- Official M20 coords: X=-376.46mm Y=0 Z=37.38mm (page 10 hardware manual) -->
+        <origin xyz="-0.37646 0.0 0.03738" rpy="0 0 3.14159265"/>
+        <parent link="base_link"/><child link="camera_rear_link"/>
+    </joint>
+
+    <link name="lidar_front_link">
+        <visual>
+            <origin xyz="0 0 0" rpy="0 0 0"/>
+            <geometry><cylinder length="0.040" radius="0.035"/></geometry>
+            <material name="dark_grey"><color rgba="0.2 0.2 0.2 1.0"/></material>
+        </visual>
+        <collision>
+            <origin xyz="0 0 0" rpy="0 0 0"/>
+            <geometry><cylinder length="0.040" radius="0.035"/></geometry>
+        </collision>
+        <inertial>
+            <origin xyz="0 0 0" rpy="0 0 0"/>
+            <mass value="0.190"/>
+            <inertia ixx="0.0001" ixy="0.0" ixz="0.0" iyy="0.0001" iyz="0.0" izz="0.0001"/>
+        </inertial>
+    </link>
+    <joint name="lidar_front_joint" type="fixed">
+        <!-- Official M20 coords: X=320.28mm Y=0 Z=-13mm (page 10 hardware manual) -->
+        <origin xyz="0.32028 0.0 -0.013" rpy="0 0 0"/>
+        <parent link="base_link"/><child link="lidar_front_link"/>
+    </joint>
+
+    <link name="lidar_rear_link">
+        <visual>
+            <origin xyz="0 0 0" rpy="0 0 0"/>
+            <geometry><cylinder length="0.040" radius="0.035"/></geometry>
+            <material name="dark_grey"><color rgba="0.2 0.2 0.2 1.0"/></material>
+        </visual>
+        <collision>
+            <origin xyz="0 0 0" rpy="0 0 0"/>
+            <geometry><cylinder length="0.040" radius="0.035"/></geometry>
+        </collision>
+        <inertial>
+            <origin xyz="0 0 0" rpy="0 0 0"/>
+            <mass value="0.190"/>
+            <inertia ixx="0.0001" ixy="0.0" ixz="0.0" iyy="0.0001" iyz="0.0" izz="0.0001"/>
+        </inertial>
+    </link>
+    <joint name="lidar_rear_joint" type="fixed">
+        <!-- Official M20 coords: X=-320.28mm Y=0 Z=-13mm (page 10 hardware manual) -->
+        <origin xyz="-0.32028 0.0 -0.013" rpy="0 0 3.14159265"/>
+        <parent link="base_link"/><child link="lidar_rear_link"/>
+    </joint>
+
+    <link name="imu_link">
+        <visual>
+            <origin xyz="0 0 0" rpy="0 0 0"/>
+            <geometry><box size="0.020 0.020 0.010"/></geometry>
+            <material name="dark_grey"><color rgba="0.2 0.2 0.2 1.0"/></material>
+        </visual>
+        <collision>
+            <origin xyz="0 0 0" rpy="0 0 0"/>
+            <geometry><box size="0.020 0.020 0.010"/></geometry>
+        </collision>
+        <inertial>
+            <origin xyz="0 0 0" rpy="0 0 0"/>
+            <mass value="0.015"/>
+            <inertia ixx="0.0001" ixy="0.0" ixz="0.0" iyy="0.0001" iyz="0.0" izz="0.0001"/>
+        </inertial>
+    </link>
+    <joint name="imu_joint" type="fixed">
+        <!-- Official M20 coords: X=63.2mm Y=-26.8mm Z=-43.5mm -->
+        <origin xyz="0.0632 -0.0268 -0.0435" rpy="0 0 0"/>
+        <parent link="base_link"/><child link="imu_link"/>
+    </joint>
+
+    <!-- ================================================================== -->
+    <!--  ARM MOUNTING BRACKET                                               -->
+    <!--  270 mm × 165 mm × 10 mm aluminium adapter plate.                  -->
+    <!--  Centred on the back rail; origin placed at the top surface of      -->
+    <!--  base_link (Z ≈ 0.075 m = body half-height 0.07 m + 5 mm gap).    -->
+    <!--  The arm base sits on top of this plate (+10 mm in Z).             -->
+    <!-- ================================================================== -->
+    <link name="arm_mount_link">
+        <visual>
+            <origin xyz="0 0 0.005" rpy="0 0 0"/>
+            <geometry><box size="0.270 0.165 0.010"/></geometry>
+            <material name="arm_mount_grey"><color rgba="0.4 0.4 0.4 1.0"/></material>
+        </visual>
+        <collision>
+            <origin xyz="0 0 0.005" rpy="0 0 0"/>
+            <geometry><box size="0.270 0.165 0.010"/></geometry>
+        </collision>
+        <inertial>
+            <!-- 6061-Al plate, ~0.120 kg; inertia for 270×165×10 mm box -->
+            <origin xyz="0 0 0.005" rpy="0 0 0"/>
+            <mass value="0.120"/>
+            <inertia
+                ixx="3.88e-04" ixy="0.0" ixz="0.0"
+                iyy="9.13e-04" iyz="0.0"
+                izz="1.29e-03"/>
+        </inertial>
+    </link>
+
+    <!-- Fixed joint: dog body → mounting plate -->
+    <!-- ► Tune X/Y here if you want the arm off-centre on the rail.       -->
+    <!-- ► Z=0.075 keeps the plate just above the body top surface.        -->
+    <joint name="arm_mount_joint" type="fixed">
+        <origin xyz="0.0 0.0 0.075" rpy="0 0 0"/>
+        <parent link="base_link"/>
+        <child link="arm_mount_link"/>
+    </joint>
+
+    <!-- ================================================================== -->
+    <!--  RM65-6FB-V ARM  (all names prefixed "arm_")                       -->
+    <!--  Mesh path : file://$(find lynx_quanta)/meshes/arm_v2/<name>.STL      -->
+    <!--                                                                    -->
+    <!--  Chain:  arm_base_link                                             -->
+    <!--            └─ arm_joint_1 (yaw,   Z, ±178°)                       -->
+    <!--               └─ arm_link_1                                        -->
+    <!--                  └─ arm_joint_2 (pitch, Z, ±130°)                 -->
+    <!--                     └─ arm_link_2                                  -->
+    <!--                        └─ arm_joint_3 (pitch, Z, ±135°)           -->
+    <!--                           └─ arm_link_3                            -->
+    <!--                              └─ arm_joint_4 (roll,  Z, ±178°)     -->
+    <!--                                 └─ arm_link_4                      -->
+    <!--                                    └─ arm_joint_5 (pitch, Z, ±128°)-->
+    <!--                                       └─ arm_link_5                -->
+    <!--                                          └─ arm_joint_6 (roll,  Z, ±360°) -->
+    <!--                                             └─ arm_link_6          -->
+    <!--                                                └─ arm_camera_rojoint (passive) -->
+    <!--                                                   └─ arm_camera_rolink -->
+    <!--                                                      └─ arm_camera_joint (fixed) -->
+    <!--                                                         └─ arm_camera_link -->
+    <!-- ================================================================== -->
+
+    <link name="arm_base_link">
+        <inertial>
+            <origin xyz="-0.00049987 -5.2709E-05 0.060019" rpy="0 0 0"/>
+            <mass value="1.862"/>
+            <inertia
+                ixx="0.0017232" ixy="-3.1058E-06" ixz="3.7924E-05"
+                iyy="0.0017051" iyz="-1.3691E-06"
+                izz="0.00090158"/>
+        </inertial>
+        <visual>
+            <origin xyz="0 0 0" rpy="0 0 0"/>
+            <geometry>
+                <mesh filename="file://$(find lynx_quanta)/meshes/arm_v2/base_link.STL"/>
+            </geometry>
+            <material name="arm_white"><color rgba="1 1 1 1"/></material>
+        </visual>
+        <collision>
+            <origin xyz="0 0 0" rpy="0 0 0"/>
+            <geometry>
+                <mesh filename="file://$(find lynx_quanta)/meshes/arm_v2_v2/base_link.STL"/>
+            </geometry>
+        </collision>
+    </link>
+
+    <!-- Fixed joint: mounting plate → arm base -->
+    <!-- arm_base_link Z=0 sits on top of the 10 mm plate                  -->
+    <joint name="arm_base_joint" type="fixed">
+        <origin xyz="0.0 0.0 0.010" rpy="0 0 0"/>
+        <parent link="arm_mount_link"/>
+        <child link="arm_base_link"/>
+    </joint>
+
+    <!-- ── Link 1 ── -->
+    <link name="arm_link_1">
+        <inertial>
+            <origin xyz="0.000941 0.007803 -0.10744" rpy="0 0 0"/>
+            <mass value="1.51"/>
+            <inertia
+                ixx="0.002662223" ixy="-0.000026849" ixz="-0.000013775"
+                iyy="0.002331685" iyz="-0.000078667"
+                izz="0.001663712"/>
+        </inertial>
+        <visual>
+            <origin xyz="0 0 0" rpy="0 0 0"/>
+            <geometry>
+                <mesh filename="file://$(find lynx_quanta)/meshes/arm_v2/link_1.STL"/>
+            </geometry>
+            <material name="arm_white"><color rgba="1 1 1 1"/></material>
+        </visual>
+        <collision>
+            <origin xyz="0 0 0" rpy="0 0 0"/>
+            <geometry>
+                <mesh filename="file://$(find lynx_quanta)/meshes/arm_v2/link_1.STL"/>
+            </geometry>
+        </collision>
+    </link>
+    <joint name="arm_joint_1" type="revolute">
+        <!-- Shoulder yaw — 240.5 mm above arm_base_link -->
+        <origin xyz="0 0 0.2405" rpy="0 0 0"/>
+        <parent link="arm_base_link"/><child link="arm_link_1"/>
+        <axis xyz="0 0 1"/>
+        <limit lower="-3.106" upper="3.106" effort="60" velocity="3.14"/>
+        <dynamics damping="0.1" friction="0.0"/>
+    </joint>
+
+    <!-- ── Link 2 ── -->
+    <link name="arm_link_2">
+        <inertial>
+            <origin xyz="0.183722 0.000103 -0.001665" rpy="0 0 0"/>
+            <mass value="1.653"/>
+            <inertia
+                ixx="0.001706953" ixy="-0.000006995" ixz="0.001809254"
+                iyy="0.014713776" iyz="0.000006223"
+                izz="0.014239805"/>
+        </inertial>
+        <visual>
+            <origin xyz="0 0 0" rpy="0 0 0"/>
+            <geometry>
+                <mesh filename="file://$(find lynx_quanta)/meshes/arm_v2/link_2.STL"/>
+            </geometry>
+            <material name="arm_white"><color rgba="1 1 1 1"/></material>
+        </visual>
+        <collision>
+            <origin xyz="0 0 0" rpy="0 0 0"/>
+            <geometry>
+                <mesh filename="file://$(find lynx_quanta)/meshes/arm_v2/link_2.STL"/>
+            </geometry>
+        </collision>
+    </link>
+    <joint name="arm_joint_2" type="revolute">
+        <origin xyz="0 0 0" rpy="1.5708 -1.5708 0"/>
+        <parent link="arm_link_1"/><child link="arm_link_2"/>
+        <axis xyz="0 0 1"/>
+        <limit lower="-2.2689" upper="2.2689" effort="60" velocity="3.14"/>
+        <dynamics damping="0.1" friction="0.0"/>
+    </joint>
+
+    <!-- ── Link 3 ── -->
+    <link name="arm_link_3">
+        <inertial>
+            <origin xyz="0.000029 -0.090105 0.004039" rpy="0 0 0"/>
+            <mass value="0.726"/>
+            <inertia
+                ixx="0.001350874" ixy="0.000001069" ixz="-0.000000228"
+                iyy="0.000360021" iyz="-0.000219904"
+                izz="0.001331598"/>
+        </inertial>
+        <visual>
+            <origin xyz="0 0 0" rpy="0 0 0"/>
+            <geometry>
+                <mesh filename="file://$(find lynx_quanta)/meshes/arm_v2/link_3.STL"/>
+            </geometry>
+            <material name="arm_white"><color rgba="1 1 1 1"/></material>
+        </visual>
+        <collision>
+            <origin xyz="0 0 0" rpy="0 0 0"/>
+            <geometry>
+                <mesh filename="file://$(find lynx_quanta)/meshes/arm_v2/link_3.STL"/>
+            </geometry>
+        </collision>
+    </link>
+    <joint name="arm_joint_3" type="revolute">
+        <origin xyz="0.256 0 0" rpy="0 0 1.5708"/>
+        <parent link="arm_link_2"/><child link="arm_link_3"/>
+        <axis xyz="0 0 1"/>
+        <limit lower="-2.356" upper="2.356" effort="30" velocity="3.14"/>
+        <dynamics damping="0.05" friction="0.0"/>
+    </joint>
+
+    <!-- ── Link 4 ── -->
+    <link name="arm_link_4">
+        <inertial>
+            <origin xyz="0.000007 -0.009486 -0.008041" rpy="0 0 0"/>
+            <mass value="0.671"/>
+            <inertia
+                ixx="0.000690221" ixy="-0.000000865" ixz="-0.000000692"
+                iyy="0.000552834" iyz="0.000016411"
+                izz="0.000425835"/>
+        </inertial>
+        <visual>
+            <origin xyz="0 0 0" rpy="0 0 0"/>
+            <geometry>
+                <mesh filename="file://$(find lynx_quanta)/meshes/arm_v2/link_4.STL"/>
+            </geometry>
+            <material name="arm_white"><color rgba="1 1 1 1"/></material>
+        </visual>
+        <collision>
+            <origin xyz="0 0 0" rpy="0 0 0"/>
+            <geometry>
+                <mesh filename="file://$(find lynx_quanta)/meshes/arm_v2/link_4.STL"/>
+            </geometry>
+        </collision>
+    </link>
+    <joint name="arm_joint_4" type="revolute">
+        <origin xyz="0 -0.21 0" rpy="1.5708 0 0"/>
+        <parent link="arm_link_3"/><child link="arm_link_4"/>
+        <axis xyz="0 0 1"/>
+        <limit lower="-3.106" upper="3.106" effort="10" velocity="3.14"/>
+        <dynamics damping="0.05" friction="0.0"/>
+    </joint>
+
+    <!-- ── Link 5 ── -->
+    <link name="arm_link_5">
+        <inertial>
+            <origin xyz="0.000032 -0.083769 0.002326" rpy="0 0 0"/>
+            <mass value="0.647"/>
+            <inertia
+                ixx="0.000834052" ixy="0.000000952" ixz="-0.000000257"
+                iyy="0.000281767" iyz="-0.000111750"
+                izz="0.000821714"/>
+        </inertial>
+        <visual>
+            <origin xyz="0 0 0" rpy="0 0 0"/>
+            <geometry>
+                <mesh filename="file://$(find lynx_quanta)/meshes/arm_v2/link_5.STL"/>
+            </geometry>
+            <material name="arm_white"><color rgba="1 1 1 1"/></material>
+        </visual>
+        <collision>
+            <origin xyz="0 0 0" rpy="0 0 0"/>
+            <geometry>
+                <mesh filename="file://$(find lynx_quanta)/meshes/arm_v2/link_5.STL"/>
+            </geometry>
+        </collision>
+    </link>
+    <joint name="arm_joint_5" type="revolute">
+        <origin xyz="0 0 0" rpy="-1.5708 0 0"/>
+        <parent link="arm_link_4"/><child link="arm_link_5"/>
+        <axis xyz="0 0 1"/>
+        <limit lower="-2.234" upper="2.234" effort="10" velocity="3.14"/>
+        <dynamics damping="0.05" friction="0.0"/>
+    </joint>
+
+    <!-- ── Link 6  (wrist flange) ── -->
+    <link name="arm_link_6">
+        <inertial>
+            <origin xyz="-0.000569 0.00029 -0.010569" rpy="0 0 0"/>
+            <mass value="0.14434"/>
+            <inertia
+                ixx="3.043E-05" ixy="2.622E-09" ixz="2.199E-08"
+                iyy="3.604E-05" iyz="1.195E-08"
+                izz="5.52E-05"/>
+        </inertial>
+        <visual>
+            <origin xyz="0 0 0" rpy="0 0 0"/>
+            <geometry>
+                <mesh filename="file://$(find lynx_quanta)/meshes/arm_v2/link_6.STL"/>
+            </geometry>
+            <material name="arm_silver"><color rgba="0.753 0.753 0.753 1"/></material>
+        </visual>
+        <collision>
+            <origin xyz="0 0 0" rpy="0 0 0"/>
+            <geometry>
+                <mesh filename="file://$(find lynx_quanta)/meshes/arm_v2/link_6.STL"/>
+            </geometry>
+        </collision>
+    </link>
+    <joint name="arm_joint_6" type="revolute">
+        <origin xyz="0 -0.18448 0" rpy="1.5708 0 0"/>
+        <parent link="arm_link_5"/><child link="arm_link_6"/>
+        <axis xyz="0 0 1"/>
+        <limit lower="-6.28" upper="6.28" effort="10" velocity="3.14"/>
+        <dynamics damping="0.05" friction="0.0"/>
+    </joint>
+
+    <!-- ── Wrist camera rotation link (passive) ── -->
+    <link name="arm_camera_rolink">
+        <inertial>
+            <origin xyz="0.0080749 -0.044495 0.0085055" rpy="0 0 0"/>
+            <mass value="0.019695"/>
+            <inertia
+                ixx="1.5115E-05" ixy="-1.9139E-06" ixz="-8.811E-09"
+                iyy="2.7638E-06" iyz="6.7136E-09"
+                izz="1.399E-05"/>
+        </inertial>
+        <visual>
+            <origin xyz="0 0 0" rpy="0 0 0"/>
+            <geometry>
+                <mesh filename="file://$(find lynx_quanta)/meshes/arm_v2/camera_rolink.STL"/>
+            </geometry>
+            <material name="arm_silver"><color rgba="0.753 0.753 0.753 1"/></material>
+        </visual>
+        <collision>
+            <origin xyz="0 0 0" rpy="0 0 0"/>
+            <geometry>
+                <mesh filename="file://$(find lynx_quanta)/meshes/arm_v2/camera_rolink.STL"/>
+            </geometry>
+        </collision>
+    </link>
+    <!-- Passive tilt joint — effort=0, velocity=0; NOT in ros2_control -->
+    <joint name="arm_camera_rojoint" type="revolute">
+        <origin xyz="-0.033 -0.0085 -0.05388" rpy="1.5708 -1.5708 3.14"/>
+        <parent link="arm_link_6"/><child link="arm_camera_rolink"/>
+        <axis xyz="0 0 1"/>
+        <limit lower="0" upper="1.05" effort="0" velocity="0"/>
+    </joint>
+
+    <!-- ── Wrist camera (fixed to camera_rolink) ── -->
+    <link name="arm_camera_link">
+        <inertial>
+            <origin xyz="-0.009 -1.1052E-09 -0.011436" rpy="0 0 0"/>
+            <mass value="0.03915"/>
+            <inertia
+                ixx="7.2029E-06" ixy="1.2847E-13" ixz="4.6827E-14"
+                iyy="7.199E-06"  iyz="4.4495E-13"
+                izz="1.1014E-05"/>
+        </inertial>
+        <visual>
+            <origin xyz="0 0 0" rpy="0 0 0"/>
+            <geometry>
+                <mesh filename="file://$(find lynx_quanta)/meshes/arm_v2/camera_link.STL"/>
+            </geometry>
+            <material name="arm_blue"><color rgba="0.792 0.820 0.933 1"/></material>
+        </visual>
+        <collision>
+            <origin xyz="0 0 0" rpy="0 0 0"/>
+            <geometry>
+                <mesh filename="file://$(find lynx_quanta)/meshes/arm_v2/camera_link.STL"/>
+            </geometry>
+        </collision>
+    </link>
+    <joint name="arm_camera_joint" type="fixed">
+        <origin xyz="0.029031 -0.10022 -0.0005" rpy="0 1.5708 0"/>
+        <parent link="arm_camera_rolink"/><child link="arm_camera_link"/>
+        <axis xyz="0 0 0"/>
+    </joint>
+
+    <!-- ================================================================== -->
+    <!--  ros2_control — combined dog + arm                                  -->
+    <!-- ================================================================== -->
+    <ros2_control name="m20_with_arm_system" type="system">
+        <hardware>
+            <plugin>gz_ros2_control/GazeboSimSystem</plugin>
+        </hardware>
+
+        <!-- ── Dog legs ── -->
+        <joint name="fr_hipx_joint">
+            <command_interface name="position"/>
+            <state_interface name="position"/>
+            <state_interface name="velocity"/>
+        </joint>
+        <joint name="fr_hipy_joint">
+            <command_interface name="position"/>
+            <state_interface name="position"/>
+            <state_interface name="velocity"/>
+        </joint>
+        <joint name="fr_knee_joint">
+            <command_interface name="position"/>
+            <state_interface name="position"/>
+            <state_interface name="velocity"/>
+        </joint>
+        <joint name="fl_hipx_joint">
+            <command_interface name="position"/>
+            <state_interface name="position"/>
+            <state_interface name="velocity"/>
+        </joint>
+        <joint name="fl_hipy_joint">
+            <command_interface name="position"/>
+            <state_interface name="position"/>
+            <state_interface name="velocity"/>
+        </joint>
+        <joint name="fl_knee_joint">
+            <command_interface name="position"/>
+            <state_interface name="position"/>
+            <state_interface name="velocity"/>
+        </joint>
+        <joint name="hr_hipx_joint">
+            <command_interface name="position"/>
+            <state_interface name="position"/>
+            <state_interface name="velocity"/>
+        </joint>
+        <joint name="hr_hipy_joint">
+            <command_interface name="position"/>
+            <state_interface name="position"/>
+            <state_interface name="velocity"/>
+        </joint>
+        <joint name="hr_knee_joint">
+            <command_interface name="position"/>
+            <state_interface name="position"/>
+            <state_interface name="velocity"/>
+        </joint>
+        <joint name="hl_hipx_joint">
+            <command_interface name="position"/>
+            <state_interface name="position"/>
+            <state_interface name="velocity"/>
+        </joint>
+        <joint name="hl_hipy_joint">
+            <command_interface name="position"/>
+            <state_interface name="position"/>
+            <state_interface name="velocity"/>
+        </joint>
+        <joint name="hl_knee_joint">
+            <command_interface name="position"/>
+            <state_interface name="position"/>
+            <state_interface name="velocity"/>
+        </joint>
+
+        <!-- ── Dog wheels ── -->
+        <joint name="hl_wheel_joint">
+            <command_interface name="velocity"/>
+            <state_interface name="position"/>
+            <state_interface name="velocity"/>
+        </joint>
+        <joint name="hr_wheel_joint">
+            <command_interface name="velocity"/>
+            <state_interface name="position"/>
+            <state_interface name="velocity"/>
+        </joint>
+        <joint name="fl_wheel_joint">
+            <command_interface name="velocity"/>
+            <state_interface name="position"/>
+            <state_interface name="velocity"/>
+        </joint>
+        <joint name="fr_wheel_joint">
+            <command_interface name="velocity"/>
+            <state_interface name="position"/>
+            <state_interface name="velocity"/>
+        </joint>
+
+        <!-- ── RM65 arm (6 DOF, position control) ── -->
+        <joint name="arm_joint_1">
+            <command_interface name="position"/>
+            <state_interface name="position"/>
+            <state_interface name="velocity"/>
+        </joint>
+        <joint name="arm_joint_2">
+            <command_interface name="position"/>
+            <state_interface name="position"/>
+            <state_interface name="velocity"/>
+        </joint>
+        <joint name="arm_joint_3">
+            <command_interface name="position"/>
+            <state_interface name="position"/>
+            <state_interface name="velocity"/>
+        </joint>
+        <joint name="arm_joint_4">
+            <command_interface name="position"/>
+            <state_interface name="position"/>
+            <state_interface name="velocity"/>
+        </joint>
+        <joint name="arm_joint_5">
+            <command_interface name="position"/>
+            <state_interface name="position"/>
+            <state_interface name="velocity"/>
+        </joint>
+        <joint name="arm_joint_6">
+            <command_interface name="position"/>
+            <state_interface name="position"/>
+            <state_interface name="velocity"/>
+        </joint>
+        <!-- arm_camera_rojoint is passive (effort/vel = 0) — omitted -->
+    </ros2_control>
+
+    <!-- ================================================================== -->
+    <!--  GAZEBO PLUGINS & SENSOR DEFINITIONS                                -->
+    <!-- ================================================================== -->
+
+    <!-- Dog cameras -->
+    <gazebo reference="camera_front_link">
+        <sensor name="camera_front" type="rgbd_camera">
+            <always_on>1</always_on>
+            <update_rate>30</update_rate>
+            <topic>camera_front</topic>
+            <gz_frame_id>camera_front_link</gz_frame_id>
+            <camera name="camera_front">
+                <horizontal_fov>1.0472</horizontal_fov>
+                <image><width>640</width><height>480</height><format>R8G8B8</format></image>
+                <clip><near>0.1</near><far>10.0</far></clip>
+                <noise><type>gaussian</type><mean>0.0</mean><stddev>0.007</stddev></noise>
+                <depth_camera><clip><near>0.1</near><far>10.0</far></clip></depth_camera>
+                <lens><intrinsics><fx>554.254691</fx><fy>554.254691</fy><cx>320.5</cx><cy>240.5</cy><s>0.0</s></intrinsics></lens>
+            </camera>
+        </sensor>
+    </gazebo>
+
+    <gazebo reference="camera_rear_link">
+        <sensor name="camera_rear" type="rgbd_camera">
+            <always_on>1</always_on>
+            <update_rate>30</update_rate>
+            <topic>camera_rear</topic>
+            <gz_frame_id>camera_rear_link</gz_frame_id>
+            <camera name="camera_rear">
+                <horizontal_fov>1.0472</horizontal_fov>
+                <image><width>640</width><height>480</height><format>R8G8B8</format></image>
+                <clip><near>0.1</near><far>10.0</far></clip>
+                <noise><type>gaussian</type><mean>0.0</mean><stddev>0.007</stddev></noise>
+                <depth_camera><clip><near>0.1</near><far>10.0</far></clip></depth_camera>
+                <lens><intrinsics><fx>554.254691</fx><fy>554.254691</fy><cx>320.5</cx><cy>240.5</cy><s>0.0</s></intrinsics></lens>
+            </camera>
+        </sensor>
+    </gazebo>
+
+    <!-- Dog LiDARs -->
+    <gazebo reference="lidar_front_link">
+        <sensor name="lidar_front" type="gpu_lidar">
+            <always_on>1</always_on>
+            <update_rate>10</update_rate>
+            <topic>lidar_front</topic>
+            <gz_frame_id>lidar_front_link</gz_frame_id>
+            <lidar>
+                <scan>
+                    <horizontal><samples>1800</samples><resolution>1</resolution><min_angle>-3.14159265</min_angle><max_angle>3.14159265</max_angle></horizontal>
+                    <vertical><samples>96</samples><resolution>1</resolution><min_angle>-0.43633231</min_angle><max_angle>0.43633231</max_angle></vertical>
+                </scan>
+                <range><min>0.1</min><max>50.0</max><resolution>0.01</resolution></range>
+                <noise><type>gaussian</type><mean>0.0</mean><stddev>0.01</stddev></noise>
+            </lidar>
+            <visualize>false</visualize>
+        </sensor>
+    </gazebo>
+
+    <gazebo reference="lidar_rear_link">
+        <sensor name="lidar_rear" type="gpu_lidar">
+            <always_on>1</always_on>
+            <update_rate>10</update_rate>
+            <topic>lidar_rear</topic>
+            <gz_frame_id>lidar_rear_link</gz_frame_id>
+            <lidar>
+                <scan>
+                    <horizontal><samples>1800</samples><resolution>1</resolution><min_angle>-3.14159265</min_angle><max_angle>3.14159265</max_angle></horizontal>
+                    <vertical><samples>96</samples><resolution>1</resolution><min_angle>-0.43633231</min_angle><max_angle>0.43633231</max_angle></vertical>
+                </scan>
+                <range><min>0.1</min><max>50.0</max><resolution>0.01</resolution></range>
+                <noise><type>gaussian</type><mean>0.0</mean><stddev>0.01</stddev></noise>
+            </lidar>
+            <visualize>false</visualize>
+        </sensor>
+    </gazebo>
+
+    <!-- Dog IMU -->
+    <gazebo reference="imu_link">
+        <sensor name="imu_sensor" type="imu">
+            <always_on>1</always_on>
+            <update_rate>200</update_rate>
+            <topic>imu/data</topic>
+            <gz_frame_id>imu_link</gz_frame_id>
+            <imu>
+                <angular_velocity>
+                    <x><noise type="gaussian"><mean>0.0</mean><stddev>0.009</stddev></noise></x>
+                    <y><noise type="gaussian"><mean>0.0</mean><stddev>0.009</stddev></noise></y>
+                    <z><noise type="gaussian"><mean>0.0</mean><stddev>0.009</stddev></noise></z>
+                </angular_velocity>
+                <linear_acceleration>
+                    <x><noise type="gaussian"><mean>0.0</mean><stddev>0.021</stddev></noise></x>
+                    <y><noise type="gaussian"><mean>0.0</mean><stddev>0.021</stddev></noise></y>
+                    <z><noise type="gaussian"><mean>0.0</mean><stddev>0.021</stddev></noise></z>
+                </linear_acceleration>
+            </imu>
+        </sensor>
+    </gazebo>
+
+    <!-- ── Arm wrist camera (RGBD, 30 Hz) ── -->
+    <!-- Published Gz topic: arm_camera  →  bridge to ROS 2 as needed      -->
+    <gazebo reference="arm_camera_link">
+        <sensor name="arm_wrist_camera" type="rgbd_camera">
+            <always_on>1</always_on>
+            <update_rate>30</update_rate>
+            <topic>arm_camera</topic>
+            <gz_frame_id>arm_camera_link</gz_frame_id>
+            <camera name="arm_wrist_camera">
+                <!-- 69° H-FOV ≈ typical RealSense D405 -->
+                <horizontal_fov>1.2043</horizontal_fov>
+                <image><width>640</width><height>480</height><format>R8G8B8</format></image>
+                <clip><near>0.05</near><far>3.0</far></clip>
+                <noise><type>gaussian</type><mean>0.0</mean><stddev>0.005</stddev></noise>
+                <depth_camera><clip><near>0.05</near><far>3.0</far></clip></depth_camera>
+                <lens>
+                    <intrinsics>
+                        <fx>554.254691</fx><fy>554.254691</fy>
+                        <cx>320.5</cx><cy>240.5</cy><s>0.0</s>
+                    </intrinsics>
+                </lens>
+            </camera>
+        </sensor>
+    </gazebo>
+
+    <!-- System plugins -->
+    <gazebo>
+        <plugin filename="gz-sim-sensors-system" name="gz::sim::systems::Sensors">
+            <render_engine>ogre2</render_engine>
+        </plugin>
+    </gazebo>
+
+    <gazebo>
+        <plugin filename="gz-sim-imu-system" name="gz::sim::systems::Imu"/>
+    </gazebo>
+
+    <gazebo>
+        <plugin filename="gz-sim-odometry-publisher-system"
+                name="gz::sim::systems::OdometryPublisher">
+            <odom_frame>odom</odom_frame>
+            <robot_base_frame>base_footprint</robot_base_frame>
+            <odom_publish_frequency>30</odom_publish_frequency>
+            <odom_topic>odom</odom_topic>
+            <tf_topic>tf</tf_topic>
+        </plugin>
+    </gazebo>
+
+    <gazebo>
+        <plugin filename="ignition-gazebo-joint-state-publisher-system"
+                name="ignition::gazebo::systems::JointStatePublisher">
+            <topic>/joint_states</topic>
+        </plugin>
+    </gazebo>
+
+    <gazebo>
+        <plugin filename="gz_ros2_control-system"
+                name="gz_ros2_control::GazeboSimROS2ControlPlugin">
+            <parameters>$(find lynx_quanta)/config/m20_with_arm_controller.yaml</parameters>
+        </plugin>
+    </gazebo>
+
+    <!--
+    ====================================================================
+    REQUIRED: add this block to m20_with_arm_controller.yaml
+    ====================================================================
+
+    arm_controller:
+      ros__parameters:
+        type: joint_trajectory_controller/JointTrajectoryController
+        joints:
+          - arm_joint_1
+          - arm_joint_2
+          - arm_joint_3
+          - arm_joint_4
+          - arm_joint_5
+          - arm_joint_6
+        command_interfaces:
+          - position
+        state_interfaces:
+          - position
+          - velocity
+        state_publish_rate: 50.0
+        action_monitor_rate: 20.0
+        allow_partial_joints_goal: false
+        constraints:
+          stopped_velocity_tolerance: 0.01
+          goal_time: 0.6
+
+    Also add  arm_controller  to the controller_manager's list of
+    controllers to activate on startup.
+    ====================================================================
+    -->
+
+</robot>
