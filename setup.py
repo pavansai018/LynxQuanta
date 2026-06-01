@@ -28,6 +28,7 @@ setup(
         *package_files('config'),
         *package_files('launch'),
         *package_files('maps'),
+        *package_files('policy'),
     ],
     install_requires=['setuptools'],
     zip_safe=True,
@@ -49,7 +50,8 @@ setup(
             'depth_visualizer = lynx_quanta.depth_visualizer:main',
             'lidar_merger = lynx_quanta.lidar_merger:main',
             'arm_controller = lynx_quanta.piper_ik_arm_controller:main',
-            'scan_merger = lynx_quanta.scan_merger:main',
+            'policy_runner_node = lynx_quanta.policy_runner_node:main',
+            'policy_teleop_node  = lynx_quanta.policy_teleop_node:main',
         ],
     },
 )
