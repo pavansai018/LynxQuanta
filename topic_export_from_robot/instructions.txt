@@ -1,0 +1,47 @@
+Step 1: 
+
+In your laptop, download `laptop_full_pc2_receiver.py` and place in `/tmp/` folder
+
+open a terminal
+
+export ROS_LOCALHOST_ONLY=0
+python3 /tmp/laptop_full_pc2_receiver.py
+
+
+Step 2: 
+
+In robot nos (user@10.21.31.106), download `robot_full_pc2_tcp_sender.py` and place in `/tmp/` folder
+
+open a terminal
+
+sudo bash -lc '
+source /opt/robot/scripts/setup_ros2.sh
+export FASTRTPS_DEFAULT_PROFILES_FILE=/opt/robot/fastdds.xml
+export LAPTOP_IP=10.21.31.100
+export PC2_MIN_PERIOD=0.2
+python3 /tmp/robot_full_pc2_tcp_sender.py
+'
+
+[Above command sends full frames, but at max 5 Hz per topic.]
+
+If you want full speed try `export PC2_MIN_PERIOD=0.0`
+
+
+Step 3:
+
+Open another terminal in your laptop
+
+
+export ROS_LOCALHOST_ONLY=0
+ros2 daemon stop
+ros2 topic list --no-daemon -t | grep -Ei "LIDAR|POINTS|TCP"
+
+Expected result:
+
+/LIDAR/POINTS_TCP [sensor_msgs/msg/PointCloud2]
+/LIDAR/POINTS2_TCP [sensor_msgs/msg/PointCloud2]
+
+[for testing]
+ros2 topic hz /LIDAR/POINTS_TCP
+ros2 topic hz /LIDAR/POINTS2_TCP
+ros2 topic echo /LIDAR/POINTS_TCP sensor_msgs/msg/PointCloud2 --no-arr
